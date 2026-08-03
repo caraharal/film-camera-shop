@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="description" content="慢帧时光 — 胶片相机集市，精选二手胶片相机">
+  <title>慢帧时光 film — 胶片相机集市</title>
+
+  <!-- Google Fonts: Noto Serif SC（思源宋体，复古感） -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- ==============================
+       Header — Logo & 网站标题
+       ============================== -->
+  <header class="site-header">
+    <div class="site-logo">
+      <span class="logo-icon">📷</span><span id="site-logo">慢帧时光</span>
+    </div>
+    <div class="site-subtitle" id="site-subtitle">film camera market</div>
+    <hr class="header-divider">
+  </header>
+
+  <!-- ==============================
+       导购问卷入口横幅（JS 动态渲染）
+       ============================== -->
+  <div id="quiz-banner" style="display:none"></div>
+
+  <!-- ==============================
+       问卷面板（JS 动态渲染）
+       ============================== -->
+  <div id="quiz-panel"></div>
+
+  <!-- ==============================
+       相机卡片列表（JS 动态渲染）
+       ============================== -->
+  <main class="camera-list" id="camera-list">
+    <!-- 加载中占位 -->
+    <div class="empty-state">📷 加载中...</div>
+  </main>
+
+  <!-- ==============================
+       Footer — 底部声明
+       ============================== -->
+  <footer class="site-footer">
+    ⚠ 支持验机 · 不满意可退 · 诚信交易
+  </footer>
+
+  <!-- ==============================
+       JavaScript
+       ============================== -->
+  <!-- 1. 相机数据（你先改这个文件） -->
+  <script src="js/cameras.js"></script>
+  <!-- 2. 公共逻辑（渲染、轮播、复制等） -->
+  <script src="js/main.js"></script>
+</body>
+</html>

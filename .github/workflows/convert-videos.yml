@@ -1,0 +1,106 @@
+# ============================================================
+# 慢帧时光 film — 视频自动转换工作流
+# 当 videos/ 目录有新增或修改的 .MOV 文件时：
+#   1. 用 ffmpeg 转为 MP4（H.264, 移动端优化）
+#   2. 提交转换后的 MP4 回仓库
+#   3. 自动触发 Pages 部署
+# ============================================================
+
+name: 转换视频格式
+
+on:
+  push:
+    paths:
+      - 'videos/**.MOV'
+      - 'videos/**.mov'
+  workflow_dispatch:
+
+jobs:
+  convert:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: 检出仓库
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 安装 ffmpeg
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
+
+      - name: 扫描并转换 MOV → MP4
+        run: |
+          echo "🔍 扫描 videos/ 目录中的 MOV 文件..."
+          converted=0
+          skipped=0
+
+          for mov in videos/*.MOV videos/*.mov; do
+            [ -f "$mov" ] || continue
+
+            filename=$(basename "$mov")
+            name_no_ext="${filename%.*}"
+            mp4="videos/${name_no_ext}.mp4"
+
+            # 检查是否已有对应的 MP4（且比 MOV 更新）
+            if [ -f "$mp4" ] && [ "$mp4" -nt "$mov" ]; then
+              echo "⏭ 跳过（MP4 已是最新）: $filename"
+              skipped=$((skipped + 1))
+              continue
+            fi
+
+            echo "🎬 转换中: $filename → ${name_no_ext}.mp4"
+
+            # 获取视频分辨率
+            height=$(ffprobe -v error -select_streams v:0 \
+              -show_entries stream=height -of csv=p=0 "$mov" 2>/dev/null || echo "1080")
+
+            # 如果超过 1080p，限制到 1080p
+            if [ "$height" -gt 1080 ]; then
+              scale_filter="-vf scale=-2:1080"
+            else
+              scale_filter=""
+            fi
+
+            # 转换参数：
+            # -c:v libx264    H.264 编码（所有浏览器兼容）
+            # -crf 23         质量（18-28，23 是平衡点）
+            # -preset fast    编码速度优先
+            # -c:a aac        音频 AAC
+            # -b:a 128k       音频码率
+            # -movflags +faststart  边下边播（移动端友好）
+            ffmpeg -i "$mov" \
+              -c:v libx264 -crf 23 -preset fast \
+              -c:a aac -b:a 128k \
+              -movflags +faststart \
+              $scale_filter \
+              -y "$mp4" 2>&1 | tail -3
+
+            echo "✅ 完成: ${name_no_ext}.mp4 ($(du -h "$mp4" | cut -f1))"
+            converted=$((converted + 1))
+          done
+
+          echo ""
+          echo "📊 转换统计: $converted 个已转换, $skipped 个已跳过"
+
+          # 如果有新转换的文件，提交
+          if [ $converted -gt 0 ]; then
+            echo "converted=true" >> $GITHUB_OUTPUT
+          else
+            echo "converted=false" >> $GITHUB_OUTPUT
+          fi
+        id: convert
+
+      - name: 提交 MP4 文件
+        if: steps.convert.outputs.converted == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add videos/*.mp4
+          git commit -m "🎬 自动转换视频格式 MOV → MP4"
+          git push
+          echo "✅ MP4 已提交，GitHub Pages 将自动更新"
