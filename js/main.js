@@ -651,37 +651,44 @@ function showResults() {
    ================================================================ */
 
 (function init() {
-  // 等待 CAMERAS 就绪（可能从 JSON 异步加载）
-  function ready() {
-    var path = window.location.pathname;
-    if (path.indexOf('detail.html') !== -1) {
-      renderDetail();
-    } else {
-      renderCameraList();
-      // 渲染问卷入口（如果启用且有相机数据）
-      if (SITE_CONFIG.quizEnabled && CAMERAS && CAMERAS.length > 0) {
-        renderQuizBanner();
+  // 确保 DOM 就绪后再渲染
+  function doInit() {
+    function ready() {
+      var path = window.location.pathname;
+      if (path.indexOf('detail.html') !== -1) {
+        renderDetail();
+      } else {
+        renderCameraList();
+        if (SITE_CONFIG.quizEnabled && CAMERAS && CAMERAS.length > 0) {
+          renderQuizBanner();
+        }
       }
+    }
+
+    if (typeof CAMERAS !== 'undefined' && CAMERAS.length > 0) {
+      ready();
+    } else {
+      var checkCount = 0;
+      var checkInterval = setInterval(function () {
+        checkCount++;
+        if (typeof CAMERAS !== 'undefined') {
+          clearInterval(checkInterval);
+          ready();
+        } else if (checkCount > 50) {
+          clearInterval(checkInterval);
+          // 最终降级：显示错误提示
+          var list = document.getElementById('camera-list');
+          if (list) list.innerHTML = '<div class="empty-state">📷<br>数据加载失败，请刷新页面</div>';
+        }
+      }, 100);
     }
   }
 
-  // 如果 CAMERAS 还未定义（可能从 JSON 异步加载），等待
-  if (typeof CAMERAS !== 'undefined' && CAMERAS.length > 0) {
-    ready();
+  // DOM 已就绪（脚本在 body 末尾）直接运行，否则等 DOMContentLoaded
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', doInit);
   } else {
-    // 轮询等待 cameras.js 加载
-    var checkCount = 0;
-    var checkInterval = setInterval(function () {
-      checkCount++;
-      if (typeof CAMERAS !== 'undefined') {
-        clearInterval(checkInterval);
-        ready();
-      } else if (checkCount > 50) {
-        clearInterval(checkInterval);
-        console.error('CAMERAS data not loaded');
-        ready(); // 继续，让各个渲染函数处理空数据
-      }
-    }, 100);
+    doInit();
   }
 })();
 

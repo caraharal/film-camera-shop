@@ -33,7 +33,7 @@
   --radius-lg: 12px;
 
   /* 字体 */
-  --font-serif: 'Noto Serif SC', 'Songti SC', 'SimSun', serif;
+  --font-serif: 'Songti SC', 'STSongti', 'STSong', 'SimSun', 'Noto Serif SC', serif;
   --font-sans:  -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', sans-serif;
 }
 
