@@ -24,6 +24,27 @@ var LS_OWNER = 'film_camera_shop_owner';
 var LS_REPO  = 'film_camera_shop_repo';
 
 /* ================================================================
+   工具函数
+   ================================================================ */
+
+function showToast(message, duration) {
+  duration = duration || 2000;
+  var toast = document.getElementById('toast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'toast';
+    toast.className = 'toast';
+    document.body.appendChild(toast);
+  }
+  toast.textContent = message;
+  toast.classList.add('show');
+  clearTimeout(toast._timeout);
+  toast._timeout = setTimeout(function () {
+    toast.classList.remove('show');
+  }, duration);
+}
+
+/* ================================================================
    初始化
    ================================================================ */
 
