@@ -61,15 +61,29 @@ function showToast(message, duration) {
   ADMIN.repoName = localStorage.getItem(LS_REPO) || DEFAULT_CONFIG.repo;
 
   if (ADMIN.token) {
-    // Token 已配置，直接加载
+    // Token 已配置，显示加载中，然后尝试从 GitHub 加载
     ADMIN.isSetup = true;
     document.getElementById('admin-actions').style.display = 'flex';
+    var main = document.getElementById('admin-main');
+    main.innerHTML = '<div class="empty-state" style="padding:60px 0">⏳ 加载中...</div>';
     loadCamerasFromGitHub();
   } else {
-    // 未配置 token，显示设置表单（用户名和仓库名已预填）
+    // 未配置 token，显示设置表单
     renderSetup();
   }
 })();
+
+/** 清除设置，回到初始状态 */
+function resetSettings() {
+  localStorage.removeItem(LS_TOKEN);
+  localStorage.removeItem(LS_OWNER);
+  localStorage.removeItem(LS_REPO);
+  ADMIN.token = '';
+  ADMIN.isSetup = false;
+  document.getElementById('admin-actions').style.display = 'none';
+  renderSetup();
+  showToast('🔄 已重置，请重新输入 Token');
+}
 
 /* ================================================================
    页面渲染
@@ -577,26 +591,34 @@ function loadCamerasFromGitHub() {
   xhr.setRequestHeader('Accept', 'application/vnd.github.v3+json');
 
   xhr.onload = function () {
-    if (xhr.status === 200) {
-      var resp = JSON.parse(xhr.responseText);
-      var content = atob(resp.content);
-      // 解码 UTF-8
-      try {
-        ADMIN.cameras = JSON.parse(decodeURIComponent(escape(content)));
-      } catch (e) {
-        ADMIN.cameras = JSON.parse(content);
+      if (xhr.status === 200) {
+        var resp = JSON.parse(xhr.responseText);
+        var content = atob(resp.content);
+        try {
+          ADMIN.cameras = JSON.parse(decodeURIComponent(escape(content)));
+        } catch (e) {
+          ADMIN.cameras = JSON.parse(content);
+        }
+        renderCameraList();
+      } else if (xhr.status === 401 || xhr.status === 403) {
+        showToast('⚠ Token 已失效，请重新设置');
+        resetSettings();
+      } else {
+        ADMIN.cameras = (typeof CAMERAS !== 'undefined' && CAMERAS) ? JSON.parse(JSON.stringify(CAMERAS)) : [];
+        renderCameraList();
       }
-    } else {
-      // 文件不存在，用本地数据
-      ADMIN.cameras = (typeof CAMERAS !== 'undefined' && CAMERAS) ? JSON.parse(JSON.stringify(CAMERAS)) : [];
-    }
-    renderCameraList();
-  };
-
+    };
   xhr.onerror = function () {
     ADMIN.cameras = (typeof CAMERAS !== 'undefined' && CAMERAS) ? JSON.parse(JSON.stringify(CAMERAS)) : [];
     renderCameraList();
     showToast('⚠ 无法连接 GitHub，使用本地数据');
+  };
+
+  xhr.timeout = 15000;
+  xhr.ontimeout = function () {
+    ADMIN.cameras = (typeof CAMERAS !== 'undefined' && CAMERAS) ? JSON.parse(JSON.stringify(CAMERAS)) : [];
+    renderCameraList();
+    showToast('⚠ 连接超时，使用本地数据');
   };
 
   xhr.send();
