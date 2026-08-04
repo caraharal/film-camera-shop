@@ -23,6 +23,12 @@ var LS_TOKEN = 'film_camera_shop_token';
 var LS_OWNER = 'film_camera_shop_owner';
 var LS_REPO  = 'film_camera_shop_repo';
 
+// 预配置（用户名和仓库已填好，只需输入 Token）
+var DEFAULT_CONFIG = {
+  owner: 'caraharal',
+  repo: 'film-camera-shop'
+};
+
 /* ================================================================
    工具函数
    ================================================================ */
@@ -49,16 +55,18 @@ function showToast(message, duration) {
    ================================================================ */
 
 (function initAdmin() {
-  // 尝试从 localStorage 加载配置
+  // 从 localStorage 加载，回退到默认值
   ADMIN.token = localStorage.getItem(LS_TOKEN) || '';
-  ADMIN.repoOwner = localStorage.getItem(LS_OWNER) || '';
-  ADMIN.repoName = localStorage.getItem(LS_REPO) || 'film-camera-shop';
+  ADMIN.repoOwner = localStorage.getItem(LS_OWNER) || DEFAULT_CONFIG.owner;
+  ADMIN.repoName = localStorage.getItem(LS_REPO) || DEFAULT_CONFIG.repo;
 
-  if (ADMIN.token && ADMIN.repoOwner) {
+  if (ADMIN.token) {
+    // Token 已配置，直接加载
     ADMIN.isSetup = true;
     document.getElementById('admin-actions').style.display = 'flex';
     loadCamerasFromGitHub();
   } else {
+    // 未配置 token，显示设置表单（用户名和仓库名已预填）
     renderSetup();
   }
 })();
