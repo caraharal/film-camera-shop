@@ -290,7 +290,7 @@ function renderFormOverlay(cam, index) {
       '</div>' +
       '<div class="admin-form-footer">' +
         (isNew ? '' : '<button class="btn btn-admin-delete-big" onclick="deleteCamera(' + index + ')">🗑 删除</button>') +
-        '<button class="btn btn-wechat" onclick="' + (isNew ? 'saveNewCamera()' : 'saveEditCamera(' + index + ')') + '">💾 保存</button>' +
+        '<button class="btn btn-wechat" onclick="' + (isNew ? 'saveNewCamera()' : 'saveEditCamera(' + index + ')') + '">💾 保存并发布</button>' +
       '</div>' +
     '</div>';
 
@@ -452,25 +452,27 @@ function saveNewCamera() {
   showSaving();
   uploadFormAssets(cam, overlay, function (savedCam) {
     ADMIN.cameras.push(savedCam);
-    hideSaving();
     closeForm();
-    showToast('✅ 已添加：' + savedCam.name);
     renderCameraList();
+    showToast('✅ 已添加，正在发布...');
+    hideSaving();
+    publishAll();
   });
 }
 
 function saveEditCamera(index) {
   var overlay = document.getElementById('admin-form-overlay');
   var cam = collectFormData();
-  cam.id = ADMIN.cameras[index].id; // 保持原 id
+  cam.id = ADMIN.cameras[index].id;
 
   showSaving();
   uploadFormAssets(cam, overlay, function (savedCam) {
     ADMIN.cameras[index] = savedCam;
-    hideSaving();
     closeForm();
-    showToast('✅ 已更新：' + savedCam.name);
     renderCameraList();
+    showToast('✅ 已更新，正在发布...');
+    hideSaving();
+    publishAll();
   });
 }
 
@@ -478,8 +480,9 @@ function deleteCamera(index) {
   if (!confirm('确定删除「' + ADMIN.cameras[index].name + '」？')) return;
   ADMIN.cameras.splice(index, 1);
   closeForm();
-  showToast('🗑 已删除（记得点"发布更新"生效）');
   renderCameraList();
+  showToast('🗑 已删除，正在发布...');
+  publishAll();
 }
 
 /* ================================================================
