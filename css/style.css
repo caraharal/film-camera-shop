@@ -1251,6 +1251,27 @@ img::before {
   justify-content: center;
 }
 
+/* 图片排序按钮 */
+.img-order-btn {
+  position: absolute;
+  left: 2px;
+  width: 18px;
+  height: 16px;
+  border: none;
+  border-radius: 3px;
+  background: rgba(0,0,0,0.5);
+  color: #fff;
+  font-size: 0.5rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  padding: 0;
+}
+.img-order-up   { top: 2px; }
+.img-order-down { bottom: 2px; }
+
 .admin-image-add {
   width: 80px;
   height: 80px;

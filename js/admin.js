@@ -196,11 +196,15 @@ function renderFormOverlay(cam, index) {
 
   // 图片预览
   var imagesPreviewHtml = '';
-  if (cam.images && cam.images.length > 0) {
-    for (var i = 0; i < cam.images.length; i++) {
+  var imgCount = (cam.images && cam.images.length) || 0;
+  if (imgCount > 0) {
+    for (var i = 0; i < imgCount; i++) {
+      var upBtn = i > 0 ? '<button class="img-order-btn img-order-up" onclick="event.stopPropagation();moveFormImage(' + i + ', -1)">▲</button>' : '';
+      var downBtn = i < imgCount - 1 ? '<button class="img-order-btn img-order-down" onclick="event.stopPropagation();moveFormImage(' + i + ', 1)">▼</button>' : '';
       imagesPreviewHtml +=
         '<div class="admin-image-thumb" style="background-image:url(' + cam.images[i] + ')" data-img-index="' + i + '">' +
           '<button class="remove-img" onclick="event.stopPropagation();removeFormImage(' + i + ')">✕</button>' +
+          upBtn + downBtn +
         '</div>';
     }
   }
@@ -335,12 +339,24 @@ function closeForm() {
 }
 
 function removeFormImage(imgIndex) {
-  // 使用 message 方式通知 overlay 更新
   var overlay = document.getElementById('admin-form-overlay');
   if (overlay && overlay._pendingImages) {
     overlay._pendingImages.splice(imgIndex, 1);
     refreshImagePreview(overlay);
   }
+}
+
+function moveFormImage(fromIndex, direction) {
+  var overlay = document.getElementById('admin-form-overlay');
+  if (!overlay || !overlay._pendingImages) return;
+  var imgs = overlay._pendingImages;
+  var toIndex = fromIndex + direction;
+  if (toIndex < 0 || toIndex >= imgs.length) return;
+  // 交换
+  var tmp = imgs[fromIndex];
+  imgs[fromIndex] = imgs[toIndex];
+  imgs[toIndex] = tmp;
+  refreshImagePreview(overlay);
 }
 
 function removeFormVideo() {
@@ -387,12 +403,16 @@ function refreshImagePreview(overlay) {
   var container = document.getElementById('form-images-preview');
   if (!container) return;
 
+  var len = overlay._pendingImages.length;
   var html = '';
-  for (var i = 0; i < overlay._pendingImages.length; i++) {
+  for (var i = 0; i < len; i++) {
     var src = overlay._pendingImages[i];
+    var upBtn = i > 0 ? '<button class="img-order-btn img-order-up" onclick="event.stopPropagation();moveFormImage(' + i + ', -1)">▲</button>' : '';
+    var downBtn = i < len - 1 ? '<button class="img-order-btn img-order-down" onclick="event.stopPropagation();moveFormImage(' + i + ', 1)">▼</button>' : '';
     html +=
       '<div class="admin-image-thumb" style="background-image:url(' + src + ')" data-img-index="' + i + '">' +
         '<button class="remove-img" onclick="event.stopPropagation();removeFormImage(' + i + ')">✕</button>' +
+        upBtn + downBtn +
       '</div>';
   }
   html +=
@@ -629,20 +649,14 @@ function loadCamerasFromGitHub() {
 
 /** 上传文件到 GitHub */
 function uploadToGitHub(path, base64Content, commitMsg, onSuccess, onError) {
-  var xhr = new XMLHttpRequest();
-
   // 先检查文件是否已存在（获取 sha）
   var checkXhr = new XMLHttpRequest();
   checkXhr.open('GET', githubApiBase() + '/contents/' + path + '?ref=' + ADMIN.branch);
   checkXhr.setRequestHeader('Authorization', 'token ' + ADMIN.token);
   checkXhr.setRequestHeader('Accept', 'application/vnd.github.v3+json');
+  checkXhr.timeout = 15000;
 
-  checkXhr.onload = function () {
-    var sha = null;
-    if (checkXhr.status === 200) {
-      sha = JSON.parse(checkXhr.responseText).sha;
-    }
-
+  function doUpload(sha) {
     var body = JSON.stringify({
       message: commitMsg,
       content: base64Content,
@@ -655,45 +669,31 @@ function uploadToGitHub(path, base64Content, commitMsg, onSuccess, onError) {
     putXhr.setRequestHeader('Authorization', 'token ' + ADMIN.token);
     putXhr.setRequestHeader('Accept', 'application/vnd.github.v3+json');
     putXhr.setRequestHeader('Content-Type', 'application/json');
+    putXhr.timeout = 30000;
 
     putXhr.onload = function () {
       if (putXhr.status === 201 || putXhr.status === 200) {
         if (onSuccess) onSuccess();
       } else {
-        console.error('GitHub upload failed:', putXhr.status, putXhr.responseText);
+        console.error('GitHub upload failed:', putXhr.status);
         if (onError) onError();
       }
     };
     putXhr.onerror = function () { if (onError) onError(); };
+    putXhr.ontimeout = function () { if (onError) onError(); };
     putXhr.send(body);
+  }
+
+  checkXhr.onload = function () {
+    var sha = null;
+    if (checkXhr.status === 200) {
+      sha = JSON.parse(checkXhr.responseText).sha;
+    }
+    doUpload(sha);
   };
 
-  checkXhr.onerror = function () {
-    // 文件不存在，直接创建
-    var body = JSON.stringify({
-      message: commitMsg,
-      content: base64Content,
-      branch: ADMIN.branch
-    });
-
-    var putXhr = new XMLHttpRequest();
-    putXhr.open('PUT', githubApiBase() + '/contents/' + path);
-    putXhr.setRequestHeader('Authorization', 'token ' + ADMIN.token);
-    putXhr.setRequestHeader('Accept', 'application/vnd.github.v3+json');
-    putXhr.setRequestHeader('Content-Type', 'application/json');
-
-    putXhr.onload = function () {
-      if (putXhr.status === 201 || putXhr.status === 200) {
-        if (onSuccess) onSuccess();
-      } else {
-        console.error('GitHub upload failed:', putXhr.status, putXhr.responseText);
-        if (onError) onError();
-      }
-    };
-    putXhr.onerror = function () { if (onError) onError(); };
-    putXhr.send(body);
-  };
-
+  checkXhr.onerror = function () { doUpload(null); };
+  checkXhr.ontimeout = function () { doUpload(null); };
   checkXhr.send();
 }
 
