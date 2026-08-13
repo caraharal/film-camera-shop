@@ -359,6 +359,17 @@ function moveFormImage(fromIndex, direction) {
   refreshImagePreview(overlay);
 }
 
+function setCoverImage(imgIndex) {
+  var overlay = document.getElementById('admin-form-overlay');
+  if (!overlay || !overlay._pendingImages) return;
+  var imgs = overlay._pendingImages;
+  if (imgIndex <= 0 || imgIndex >= imgs.length) return;
+  // 把选中的图移到第一位作为封面
+  var item = imgs.splice(imgIndex, 1)[0];
+  imgs.unshift(item);
+  refreshImagePreview(overlay);
+}
+
 function removeFormVideo() {
   var overlay = document.getElementById('admin-form-overlay');
   if (overlay) {
@@ -409,10 +420,13 @@ function refreshImagePreview(overlay) {
     var src = overlay._pendingImages[i];
     var upBtn = i > 0 ? '<button class="img-order-btn img-order-up" onclick="event.stopPropagation();moveFormImage(' + i + ', -1)">▲</button>' : '';
     var downBtn = i < len - 1 ? '<button class="img-order-btn img-order-down" onclick="event.stopPropagation();moveFormImage(' + i + ', 1)">▼</button>' : '';
+    var coverMark = (i === 0)
+      ? '<span class="img-cover-badge">封面</span>'
+      : '<button class="img-cover-btn" onclick="event.stopPropagation();setCoverImage(' + i + ')" title="设为封面">⭐</button>';
     html +=
       '<div class="admin-image-thumb" style="background-image:url(' + src + ')" data-img-index="' + i + '">' +
         '<button class="remove-img" onclick="event.stopPropagation();removeFormImage(' + i + ')">✕</button>' +
-        upBtn + downBtn +
+        upBtn + downBtn + coverMark +
       '</div>';
   }
   html +=
