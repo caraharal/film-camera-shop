@@ -350,8 +350,9 @@ function bindActions(cam) {
   }
   var xianyuBtn = document.getElementById('btn-xianyu');
   if (xianyuBtn) {
-    // 用原生 <a> 链接跳转，避免移动端浏览器拦截 window.open 弹窗
-    xianyuBtn.href = SITE_CONFIG.xianyuLink;
+    // 优先用这台相机自己的闲鱼链接，没有则回退到全局链接
+    var link = (cam && cam.xianyuLink) ? cam.xianyuLink : SITE_CONFIG.xianyuLink;
+    xianyuBtn.href = link;
   }
 }
 

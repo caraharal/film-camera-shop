@@ -180,7 +180,7 @@ function renderFormOverlay(cam, index) {
     id: '', name: '', brand: '', model: '', price: '', condition: '9成新',
     images: [], video: '', accessories: [], description: '',
     focalLength: '35mm', cameraType: 'pocket', skillLevel: 'beginner',
-    bestFor: [], filmFormat: '135'
+    bestFor: [], filmFormat: '135', xianyuLink: ''
   };
 
   // 辅助函数
@@ -241,6 +241,9 @@ function renderFormOverlay(cam, index) {
             '<option value="8成新"' + (cam.condition === '8成新' ? ' selected' : '') + '>8成新</option>' +
           '</select></div>' +
         '</div>' +
+
+        '<label>🔗 闲鱼链接（可选，留空则用全局链接）</label>' +
+        '<input type="url" id="f-xianyuLink" value="' + esc(cam.xianyuLink || '') + '" placeholder="https://m.tb.cn/... 这台相机对应的闲鱼链接">' +
 
         '<label>📷 图片</label>' +
         '<div class="admin-images-preview" id="form-images-preview">' + imagesPreviewHtml + '</div>' +
@@ -474,7 +477,8 @@ function collectFormData() {
     cameraType: document.getElementById('f-cameraType').value,
     skillLevel: document.getElementById('f-skillLevel').value,
     bestFor: bestFor,
-    filmFormat: document.getElementById('f-filmFormat').value
+    filmFormat: document.getElementById('f-filmFormat').value,
+    xianyuLink: document.getElementById('f-xianyuLink').value.trim()
   };
 }
 
