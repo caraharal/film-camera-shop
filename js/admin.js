@@ -194,20 +194,7 @@ function renderFormOverlay(cam, index) {
     bestForChecks += '<label><input type="checkbox" value="' + parts[0] + '"' + checked + '>' + parts[1] + '</label>';
   }
 
-  // 图片预览
-  var imagesPreviewHtml = '';
-  var imgCount = (cam.images && cam.images.length) || 0;
-  if (imgCount > 0) {
-    for (var i = 0; i < imgCount; i++) {
-      var upBtn = i > 0 ? '<button class="img-order-btn img-order-up" onclick="event.stopPropagation();moveFormImage(' + i + ', -1)">▲</button>' : '';
-      var downBtn = i < imgCount - 1 ? '<button class="img-order-btn img-order-down" onclick="event.stopPropagation();moveFormImage(' + i + ', 1)">▼</button>' : '';
-      imagesPreviewHtml +=
-        '<div class="admin-image-thumb" style="background-image:url(' + cam.images[i] + ')" data-img-index="' + i + '">' +
-          '<button class="remove-img" onclick="event.stopPropagation();removeFormImage(' + i + ')">✕</button>' +
-          upBtn + downBtn +
-        '</div>';
-    }
-  }
+  // 图片预览由 refreshImagePreview 统一渲染（含封面选择按钮）
 
   // 视频
   var videoHtml = cam.video
@@ -246,7 +233,7 @@ function renderFormOverlay(cam, index) {
         '<input type="url" id="f-xianyuLink" value="' + esc(cam.xianyuLink || '') + '" placeholder="https://m.tb.cn/... 这台相机对应的闲鱼链接">' +
 
         '<label>📷 图片</label>' +
-        '<div class="admin-images-preview" id="form-images-preview">' + imagesPreviewHtml + '</div>' +
+        '<div class="admin-images-preview" id="form-images-preview"></div>' +
         '<input type="file" id="form-image-input" accept="image/*" capture="environment" multiple style="padding:10px;font-size:0.9rem">' +
 
         '<label>🎬 视频</label>' +
@@ -308,10 +295,8 @@ function renderFormOverlay(cam, index) {
   overlay._pendingVideoPath = cam.video || '';
   overlay._pendingVideoFile = null;
 
-  // 图片上传监听
-  document.getElementById('form-image-input').addEventListener('change', function (e) {
-    handleImageSelect(e.target.files, overlay);
-  });
+  // 渲染图片预览（含封面选择按钮），并绑定图片上传监听
+  refreshImagePreview(overlay);
 
   // 视频上传监听
   document.getElementById('form-video-input').addEventListener('change', function (e) {

@@ -665,23 +665,28 @@ function showResults() {
       }
     }
 
-    if (typeof CAMERAS !== 'undefined' && CAMERAS.length > 0) {
-      ready();
-    } else {
-      var checkCount = 0;
-      var checkInterval = setInterval(function () {
-        checkCount++;
-        if (typeof CAMERAS !== 'undefined') {
-          clearInterval(checkInterval);
-          ready();
-        } else if (checkCount > 50) {
-          clearInterval(checkInterval);
-          // 最终降级：显示错误提示
-          var list = document.getElementById('camera-list');
-          if (list) list.innerHTML = '<div class="empty-state">📷<br>数据加载失败，请刷新页面</div>';
-        }
-      }, 100);
+    function fallback() {
+      if (typeof CAMERAS !== 'undefined' && CAMERAS.length > 0) {
+        ready();
+      } else {
+        var list = document.getElementById('camera-list');
+        if (list) list.innerHTML = '<div class="empty-state">📷<br>数据加载失败，请刷新页面</div>';
+      }
     }
+
+    // 优先拉取最新 JSON（带时间戳绕过 CDN 对 cameras.js 的缓存），失败则回退到 cameras.js
+    fetch('data/cameras.json?t=' + Date.now())
+      .then(function (res) {
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        return res.json();
+      })
+      .then(function (data) {
+        if (data && data.length > 0) {
+          window.CAMERAS = data;
+        }
+        ready();
+      })
+      .catch(fallback);
   }
 
   // DOM 已就绪（脚本在 body 末尾）直接运行，否则等 DOMContentLoaded
