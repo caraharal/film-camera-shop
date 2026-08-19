@@ -350,9 +350,8 @@ function bindActions(cam) {
   }
   var xianyuBtn = document.getElementById('btn-xianyu');
   if (xianyuBtn) {
-    xianyuBtn.addEventListener('click', function () {
-      window.open(SITE_CONFIG.xianyuLink, '_blank');
-    });
+    // 用原生 <a> 链接跳转，避免移动端浏览器拦截 window.open 弹窗
+    xianyuBtn.href = SITE_CONFIG.xianyuLink;
   }
 }
 
